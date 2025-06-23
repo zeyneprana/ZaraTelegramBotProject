@@ -5,7 +5,7 @@ import re
 import ast
 
 # Telegram Bot Token
-TOKEN = "7637122558:AAHFxGBEda39DzTDjn2n2oBzGCsrR8ow78w"
+TOKEN = "TOKEN"
 
 # PostgreSQL bağlantısı
 conn = psycopg2.connect(
