@@ -2,10 +2,12 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 import psycopg2
 import re
-import ast  
+import ast
 
-TOKEN = "token"
+# Telegram Bot Token
+TOKEN = "7637122558:AAHFxGBEda39DzTDjn2n2oBzGCsrR8ow78w"
 
+# PostgreSQL bağlantısı
 conn = psycopg2.connect(
     host="",
     database="",
@@ -15,9 +17,11 @@ conn = psycopg2.connect(
 )
 cursor = conn.cursor()
 
+# Başlat komutu
 async def start(update: Update, context: CallbackContext):
-    await update.message.reply_text("Merhaba! Zara ürün linkini gönder, sana ürün bilgilerini ve tüm resimlerini vereyim.")
+    await update.message.reply_text("Merhaba! Zara ürün linkini gönder, sana ürün bilgilerini ve tüm resimlerini vereyim.\nTakip için: /follow <zara linki>")
 
+# Ürün linki geldiğinde çalışır
 async def handle_product_link(update: Update, context: CallbackContext):
     product_url = update.message.text.strip()
 
@@ -44,8 +48,6 @@ async def handle_product_link(update: Update, context: CallbackContext):
 
     name, price, colour, description, code, picture, extra_pictures = result
 
-    # extra_pictures Postgres text[] tipi olduğu için Python listesine doğrudan dönüşüyor,
-    # ama bazen string olarak gelebilir, kontrol edip parse edelim:
     if isinstance(extra_pictures, str):
         try:
             extra_pictures = ast.literal_eval(extra_pictures)
@@ -71,9 +73,70 @@ async def handle_product_link(update: Update, context: CallbackContext):
     except:
         pass
 
+
+#Takip fonksiyonu follow
+async def follow(update: Update, context: CallbackContext):
+    if not context.args:
+        await update.message.reply_text("Lütfen bir Zara ürün linki gönder: /follow <link>")
+        return
+
+    product_url = context.args[0]
+
+    # Zara linkinden 8 haneli ürün kodunu çekiyoruz (p06861441)
+    match = re.search(r'p(\d{8})', product_url)
+    if not match:
+        await update.message.reply_text("Geçerli bir Zara ürün linki gönderin.")
+        return
+
+    product_code = match.group(1)  # "06861441"
+    chat_id = str(update.message.chat_id)
+
+    try:
+        # URL'den ürün kodunu bul, oradan product_id ve price al
+        cursor.execute("""
+            SELECT product_id, price FROM products
+            WHERE url ILIKE %s
+        """, (f'%{product_code}%',))
+        result = cursor.fetchone()
+
+        if not result:
+            await update.message.reply_text("Bu ürün veritabanında bulunamadı.")
+            return
+
+        product_id, current_price = result
+
+        # Zaten takip ediliyor mu?
+        cursor.execute("""
+            SELECT 1 FROM followed_products
+            WHERE chat_id = %s AND product_id = %s
+        """, (chat_id, product_id))
+        if cursor.fetchone():
+            await update.message.reply_text("Bu ürünü zaten takip ediyorsunuz.")
+            return
+
+        # Takibe ekle
+        cursor.execute("""
+            INSERT INTO followed_products (chat_id, product_id, followed_price)
+            VALUES (%s, %s, %s)
+        """, (chat_id, product_id, current_price))
+        conn.commit()
+
+        await update.message.reply_text(
+            f"✅ Takip başladı!\nÜrün kodu: {product_id}\nŞu anki fiyat: {current_price} TL\n"
+            f"Fiyat düşünce sana haber vereceğim 😊"
+        )
+
+    except Exception as e:
+        await update.message.reply_text("Takip sırasında bir hata oluştu.")
+        print(f"/follow hatası: {e}")
+
+
+
+# Botu başlat
 app = Application.builder().token(TOKEN).build()
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("follow", follow))
 app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_product_link))
 
-print("Bot products tablosu ile çalışıyor...")
+print("Bot çalışıyor... ürün bilgilerini ve takipleri yönetiyor.")
 app.run_polling()

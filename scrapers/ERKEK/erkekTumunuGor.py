@@ -128,7 +128,7 @@ def save_to_postgresql(productDict):
         database="",
         user="",
         password="",
-        port=5
+        port=5 
     )
     cursor = conn.cursor()
 

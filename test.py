@@ -5,11 +5,11 @@ import psycopg2
 
 try:
     conn = psycopg2.connect(
-        host="",  # ← Azure VM'in IP adresi
+        host="",
         database="",
         user="",
         password="",
-        port=5
+        port=5432 
     )
     print("✅ Bağlantı başarılı!")
     conn.close()
