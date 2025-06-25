@@ -1,134 +1,135 @@
+# erkekTumunuGor.py
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
 from time import sleep
 import psycopg2
 from erkekMain import erkekButton
+import datetime
 
-productDict = {
-    'picture': [],
-    'extra_pictures': [],
-    'name': [],
-    'price': [],
-    'colour': [],
-    'code': [],
-    'description': [],
-    'product_url': []
-}
+def scrape_erkek_products():
+    productDict = {
+        'picture': [],
+        'extra_pictures': [],
+        'name': [],
+        'price': [],
+        'colour': [],
+        'code': [],
+        'description': [],
+        'product_url': []
+    }
 
-driver = erkekButton()
-sleep(3)
+    driver = erkekButton()
+    sleep(3)
 
-# ELBİSE kategorisine tıkla
-driver.find_element(By.XPATH, '//span[@class="layout-categories-category__name" and text()="TÜMÜNÜ GÖR"]').click()
+    driver.find_element(By.XPATH, '//span[@class="layout-categories-category__name" and text()="TÜMÜNÜ GÖR"]').click()
 
-# Yeni sekmeye geç
-if len(driver.window_handles) > 1:
-    driver.switch_to.window(driver.window_handles[-1])
+    if len(driver.window_handles) > 1:
+        driver.switch_to.window(driver.window_handles[-1])
 
-# Sonsuz scroll
-lastHeight = driver.execute_script("return document.body.scrollHeight")
-while True:
-    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-    sleep(1)
-    newHeight = driver.execute_script("return document.body.scrollHeight")
-    if newHeight == lastHeight:
-        break
-    lastHeight = newHeight
+    lastHeight = driver.execute_script("return document.body.scrollHeight")
+    while True:
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        sleep(1)
+        newHeight = driver.execute_script("return document.body.scrollHeight")
+        if newHeight == lastHeight:
+            break
+        lastHeight = newHeight
 
-# Ürün linklerini topla
-product_links = set()
-products = driver.find_elements(By.CSS_SELECTOR, 'a.product-link')
-for product in products:
-    link = product.get_attribute('href')
-    if link:
-        product_links.add(link)
+    product_links = set()
+    products = driver.find_elements(By.CSS_SELECTOR, 'a.product-link')
+    for product in products:
+        link = product.get_attribute('href')
+        if link:
+            product_links.add(link)
 
-product_links = list(product_links)
-print(f"Eşsiz ürün linki sayısı: {len(product_links)}")
+    product_links = list(product_links)
+    print(f"Eşsiz ürün linki sayısı: {len(product_links)}")
 
-# İlk 3 ürünün detaylarını al
-for link in product_links[:3]:
-    driver.get(link)
-    sleep(2)
+    for link in product_links[:3]:  # Dilersen [:3] kısmını kaldırırsın
+        driver.get(link)
+        sleep(2)
 
-    productDict['product_url'].append(link)
-    print("Ürün URL:", link)
+        productDict['product_url'].append(link)
+        print("Ürün URL:", link)
 
-    try:
-        name = driver.find_element(By.CLASS_NAME, 'product-detail-info__header-name').text
-    except:
-        name = "YOK"
-    productDict['name'].append(name)
-    print("Ürün:", name)
+        try:
+            name = driver.find_element(By.CLASS_NAME, 'product-detail-info__header-name').text
+        except:
+            name = "YOK"
+        productDict['name'].append(name)
+        print("Ürün:", name)
 
-    try:
-        price_raw = driver.find_element(By.CLASS_NAME, 'money-amount__main').text
-        price_cleaned = price_raw.replace("TL", "").replace("₺", "").replace(".", "").replace(",", ".").strip()
-        price = float(price_cleaned)
-    except:
-        price = 0.0
-    productDict['price'].append(price)
-    print("Fiyat:", price)
+        try:
+            price_raw = driver.find_element(By.CLASS_NAME, 'money-amount__main').text
+            price_cleaned = price_raw.replace("TL", "").replace("₺", "").replace(".", "").replace(",", ".").strip()
+            price = float(price_cleaned)
+        except:
+            price = 0.0
+        productDict['price'].append(price)
+        print("Fiyat:", price)
 
-    try:
-        colour = driver.find_element(By.CLASS_NAME, 'product-color-extended-name').text.split('|')[0].strip()
-    except:
-        colour = "YOK"
-    productDict['colour'].append(colour)
-    print("Renk:", colour)
+        try:
+            colour = driver.find_element(By.CLASS_NAME, 'product-color-extended-name').text.split('|')[0].strip()
+        except:
+            colour = "YOK"
+        productDict['colour'].append(colour)
+        print("Renk:", colour)
 
-    try:
-        description = driver.find_element(By.CLASS_NAME, 'expandable-text__inner-content').text
-    except:
-        description = "YOK"
-    productDict['description'].append(description)
-    print("Açıklama:", description)
+        try:
+            description = driver.find_element(By.CLASS_NAME, 'expandable-text__inner-content').text
+        except:
+            description = "YOK"
+        productDict['description'].append(description)
+        print("Açıklama:", description)
 
-    try:
-        code = driver.find_element(By.CLASS_NAME, 'product-color-extended-name__copy-action').text
-    except:
-        code = "YOK"
-    productDict['code'].append(code)
-    print("Kod:", code)
+        try:
+            code = driver.find_element(By.CLASS_NAME, 'product-color-extended-name__copy-action').text
+        except:
+            code = "YOK"
+        productDict['code'].append(code)
+        print("Kod:", code)
 
-    try:
-        image_elements = driver.find_elements(By.CSS_SELECTOR, 'img.media-image__image')
-        main_image = ""
-        extra_images = []
+        try:
+            image_elements = driver.find_elements(By.CSS_SELECTOR, 'img.media-image__image')
+            main_image = ""
+            extra_images = []
 
-        for index, img in enumerate(image_elements):
-            try:
-                driver.execute_script("arguments[0].scrollIntoView(true);", img)
-                sleep(0.5)
-                src = img.get_attribute('src')
-                if src and src.startswith('http') and ('.jpg' in src or '.jpeg' in src or '.png' in src):
-                    if index == 0:
-                        main_image = src
-                    else:
-                        extra_images.append(src)
-            except:
-                continue
+            for index, img in enumerate(image_elements):
+                try:
+                    driver.execute_script("arguments[0].scrollIntoView(true);", img)
+                    sleep(0.5)
+                    src = img.get_attribute('src')
+                    if src and src.startswith('http') and ('.jpg' in src or '.jpeg' in src or '.png' in src):
+                        if index == 0:
+                            main_image = src
+                        else:
+                            extra_images.append(src)
+                except:
+                    continue
 
-        productDict['picture'].append(main_image if main_image else "YOK")
-        productDict['extra_pictures'].append(extra_images if extra_images else [])
-        print("Ana Resim:", main_image)
-        print("Ekstra Resimler:", extra_images)
-    except:
-        productDict['picture'].append("YOK")
-        productDict['extra_pictures'].append([])
-        print("Resimler: YOK")
+            productDict['picture'].append(main_image if main_image else "YOK")
+            productDict['extra_pictures'].append(extra_images if extra_images else [])
+            print("Ana Resim:", main_image)
+            print("Ekstra Resimler:", extra_images)
+        except:
+            productDict['picture'].append("YOK")
+            productDict['extra_pictures'].append([])
+            print("Resimler: YOK")
 
-    print("--------")
+        print("--------")
 
-# PostgreSQL'e kaydet veya güncelle
+    driver.quit()
+    save_to_postgresql(productDict)
+
 def save_to_postgresql(productDict):
     conn = psycopg2.connect(
         host="",
         database="",
         user="",
         password="",
-        port=5 
+        port=5
     )
     cursor = conn.cursor()
 
@@ -168,7 +169,10 @@ def save_to_postgresql(productDict):
     conn.close()
     print("✅ Tüm ürünler PostgreSQL veritabanına kaydedildi.")
 
-# Çalıştır
-save_to_postgresql(productDict)
+# Ana çalıştırıcı
+if __name__ == "__main__":
+    print(f"⏱ Başlangıç zamanı: {datetime.datetime.now()}")
+    scrape_erkek_products()
+    print(f"✅ Bitti: {datetime.datetime.now()}")
 
 
