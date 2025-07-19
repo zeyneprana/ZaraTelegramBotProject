@@ -1,5 +1,3 @@
-# erkekTumunuGor.py
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.action_chains import ActionChains
@@ -21,6 +19,7 @@ def scrape_erkek_products():
     }
 
     driver = erkekButton()
+    driver.set_script_timeout(30)  # 30 saniyeye kadar JavaScript çalışmasını bekle
     sleep(3)
 
     driver.find_element(By.XPATH, '//span[@class="layout-categories-category__name" and text()="TÜMÜNÜ GÖR"]').click()
@@ -44,10 +43,10 @@ def scrape_erkek_products():
         if link:
             product_links.add(link)
 
-    product_links = list(product_links)
+    product_links = list(product_links)  
     print(f"Eşsiz ürün linki sayısı: {len(product_links)}")
 
-    for link in product_links[:3]:  # Dilersen [:3] kısmını kaldırırsın
+    for link in product_links:  
         driver.get(link)
         sleep(2)
 
@@ -125,11 +124,11 @@ def scrape_erkek_products():
 
 def save_to_postgresql(productDict):
     conn = psycopg2.connect(
-        host="",
-        database="",
-        user="",
-        password="",
-        port=5
+        host="4.232.169.188",
+        database="zarabot_db",
+        user="zara_user",
+        password="1975oTb.lack43ck!",
+        port=5432 
     )
     cursor = conn.cursor()
 

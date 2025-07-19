@@ -2,17 +2,17 @@ import psycopg2
 import requests
 
 # Telegram bot bilgileri
-BOT_TOKEN = "TOKEN"
+BOT_TOKEN = "7637122558:AAFRDnSPtRBv67Yt07Av65yPdVD-i70kK4s"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 
 # PostgreSQL bağlantısı (AZURE VM ÜZERİNDEKİ veritabanı)
 conn = psycopg2.connect(
-    host="",
-    database="",
-    user="",
-    password="",
-    port=5
+    host="4.232.169.188",
+    database="zarabot_db",
+    user="zara_user",
+    password="1975oTb.lack43ck!",
+    port=5432 
 )
 cursor = conn.cursor()
 

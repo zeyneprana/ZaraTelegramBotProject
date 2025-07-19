@@ -5,24 +5,26 @@ import re
 import ast
 
 # Telegram Bot Token
-TOKEN = ""
+TOKEN = "7637122558:AAFRDnSPtRBv67Yt07Av65yPdVD-i70kK4s"
 
 # PostgreSQL bağlantısı
 conn = psycopg2.connect(
-    host="",
-    database="",
-    user="",
-    password="",
-    port=5    
+    host="4.232.169.188",
+    database="zarabot_db",
+    user="zara_user",
+    password="1975oTb.lack43ck!",
+    port=5432 
 )
 cursor = conn.cursor()
 
 # /start komutu
 async def start(update: Update, context: CallbackContext):
     await update.message.reply_text(
-        "Merhaba! Zara ürün linkini gönder, sana ürün bilgilerini ve tüm resimlerini vereyim.\n"
-        "Ürün fiyat takibi için: /follow <zara linki>\n"
-        "Takipten çıkmak için: /unfollow <zara linki>"
+        "Merhaba! Zara Telegram Bot'a hoşgeldin!\n"
+        "1 - Ürün linkini gönder, sana ürün bilgilerini ve tüm resimlerini vereyim!\n"
+        "2 - Ürün fiyat takibi için: /follow <zara linki>\n"
+        "3 - Takipten çıkmak için: /unfollow <zara linki>\n"
+        "4 - Takip ettiğin tüm ürünlerin listesini görmek için: /unfollowed"
     )
 
 # Ürün linki geldiğinde çalışır

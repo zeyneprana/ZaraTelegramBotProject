@@ -8,8 +8,6 @@ from time import sleep
 def erkekButton():
     options = webdriver.ChromeOptions()
 
-    # Headless geçici olarak kapalı (görsel olarak incelemek için)
-    # options.add_argument('--headless=new')
 
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
@@ -55,5 +53,4 @@ def erkekButton():
         driver.save_screenshot("/tmp/erkek_kategori_hatasi.png")
 
     return driver
-
 
